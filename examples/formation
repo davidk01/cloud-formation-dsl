@@ -1,3 +1,8 @@
+defaults:
+  ssh key name: qa
+  pem file: /keys/qa.pem
+  security groups: default
+
 pre-bootstrap:
   pools: miloapi, availability-service
   boxes: lonely-box
@@ -11,7 +16,7 @@ post-bootstrap:
 pool: miloapi, 4 instances with ubuntu 12.04
   vm flavor: tiny
   service ports: 6379, 8080, 1234, 80
-  bootstrap:
+  bootstrap sequence:
     git: git://miloapi/api-bootstrap.git
     file: /bootstrap/bash-script.sh
     inline bash: some-command && some-other-command && yet-another-command
@@ -19,7 +24,7 @@ pool: miloapi, 4 instances with ubuntu 12.04
 
 pool: availability-service, 2 instances with redhat 6.0
   vm flavor: xlarge
-  bootstrap:
+  bootstrap sequence:
     git: git://availability-service/availability-service-bootstrap.git
     file: /bootstrap/ruby-script.rb
     inline bash: command && command-1 && command-2
@@ -28,10 +33,10 @@ pool: availability-service, 2 instances with redhat 6.0
 
 box: lonely-box, 1 instance with centos 5
   vm flavor: medium
-  bootstrap:
+  bootstrap sequence:
     git: git://lonely-box/bootstrap.git
 
 box: another-lonely-box, 1 instance with debian 6
   vm flavor: large
-  bootstrap:
+  bootstrap sequence:
     file: /bootstrap/box-bootstrap.sh
