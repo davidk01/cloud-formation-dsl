@@ -1,0 +1,16 @@
+GIT
+  remote: git://github.com/davidk01/pegrb.git
+  revision: 2a95c7f501c1f24bf2a6f59c6af9c6d93da309b6
+  branch: master
+  specs:
+    pegrb (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  pegrb!
