@@ -32,3 +32,8 @@ define standalone box:
   name: lonely-box
   bootstrap:
     git: git://lonely-box/bootstrap.git
+
+define standalone box:
+  name: another-lonely-box
+  bootstrap:
+    file: /bootstrap/box-bootstrap.sh
