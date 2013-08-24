@@ -1,14 +1,14 @@
 pre-bootstrap:
-  pools: 'miloapi', 'availability-service'
-  boxes: 'lonely-box'
+  pools: miloapi, availability-service
+  boxes: lonely-box
   git: git://baseline/bootstrap.git
 
 post-bootstrap:
-  pools: 'miloapi', 'availability-service'
+  pools: miloapi, availability-service
   file: /scripts/sanity-check.sh
   directory: /scripts/global-sanity-checks
 
-pool: 4 of 'miloapi' with 'ubuntu 12.04'
+pool: miloapi, 4 instances with ubuntu 12.04
   vm flavor: tiny
   service ports: 6379, 8080, 1234, 80
   bootstrap:
@@ -17,7 +17,7 @@ pool: 4 of 'miloapi' with 'ubuntu 12.04'
     inline bash: some-command && some-other-command && yet-another-command
     directory: /bootstrap/miloapi-tests
 
-pool: 2 of 'availability-service' with 'redhat 6.0'
+pool: availability-service, 2 instances with redhat 6.0
   vm flavor: xlarge
   bootstrap:
     git: git://availability-service/availability-service-bootstrap.git
@@ -26,12 +26,12 @@ pool: 2 of 'availability-service' with 'redhat 6.0'
     inline bash: command-4 && command-5
     directory: /bootstrap/availability-service-tests
 
-box: 'lonely-box' with 'centos 5'
+box: lonely-box, 1 instance with centos 5
   vm flavor: medium
   bootstrap:
     git: git://lonely-box/bootstrap.git
 
-box: 'another-lonely-box' with 'debian 6'
+box: another-lonely-box, 1 instance with debian 6
   vm flavor: large
   bootstrap:
     file: /bootstrap/box-bootstrap.sh
