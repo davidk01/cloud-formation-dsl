@@ -1,16 +1,14 @@
-common pre-bootstrap:
+pre-bootstrap:
   pools: miloapi, availability-service
   boxes: lonely-box
   git: git://baseline/bootstrap.git
 
-common post-bootstrap:
+post-bootstrap:
   pools: miloapi, availability-service
   file: /scripts/sanity-check.sh
   directory: /scripts/global-sanity-checks
 
-define pool:
-  name: miloapi
-  boxes: 4
+pool: 4 of miloapi
   exposed ports: 6379, 8080, 1234, 80
   bootstrap:
     git: git://miloapi/api-bootstrap.git
@@ -18,9 +16,7 @@ define pool:
     inline bash: some-command && some-other-command && yet-another-command
     directory: /bootstrap/miloapi-tests
 
-define pool:
-  name: availability-service
-  boxes: 2
+pool: 2 of availability-service
   bootsrap:
     git: git://availability-service/availability-service-bootstrap.git
     file: /bootstrap/ruby-script.rb
@@ -28,12 +24,10 @@ define pool:
     inline bash: command-4 && command-5
     directory: /bootstrap/availability-service-tests
 
-define standalone box:
-  name: lonely-box
+box: lonely-box
   bootstrap:
     git: git://lonely-box/bootstrap.git
 
-define standalone box:
-  name: another-lonely-box
+box: another-lonely-box
   bootstrap:
     file: /bootstrap/box-bootstrap.sh
