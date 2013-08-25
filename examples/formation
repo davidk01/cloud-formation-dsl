@@ -1,45 +1,45 @@
 defaults:
-  ssh key name: qa
-  pem file: /keys/qa.pem
-  security groups: default
+  ssh key name: 'qa'
+  pem file: '/keys/qa.pem'
+  security groups: 'default'
 
-bootstrap sequence: pre
-  git: git://baseline/bootstrap.git
+bootstrap sequence: 'pre'
+  git: 'git://baseline/bootstrap.git'
 
-bootstrap sequence: post
-  file: /scripts/sanity-check.sh
-  directory: /scripts/global-sanity-checks
+bootstrap sequence: 'post'
+  file: '/scripts/sanity-check.sh'
+  directory: '/scripts/global-sanity-checks'
 
-pool: miloapi, 4 instances with ubuntu 12.04
-  vm flavor: tiny
+pool: 'miloapi', 4 instances with 'ubuntu 12.04'
+  vm flavor: 'tiny'
   service ports: 6379, 8080, 1234, 80
   bootstrap sequence:
-    include: pre
-    git: git://miloapi/api-bootstrap.git
-    file: /bootstrap/bash-script.sh
-    inline bash: some-command && some-other-command && yet-another-command
-    directory: /bootstrap/miloapi-tests
-    include: post
+    include: 'pre'
+    git: 'git://miloapi/api-bootstrap.git'
+    file: '/bootstrap/bash-script.sh'
+    inline bash: 'some-command && some-other-command && yet-another-command'
+    directory: '/bootstrap/miloapi-tests'
+    include: 'post'
 
-pool: availability-service, 2 instances with redhat 6.0
-  vm flavor: xlarge
+pool: 'availability-service', 2 instances with 'redhat 6.0'
+  vm flavor: 'xlarge'
   bootstrap sequence:
-    include: pre
-    git: git://availability-service/availability-service-bootstrap.git
-    file: /bootstrap/ruby-script.rb
-    inline bash: command && command-1 && command-2
-    inline bash: command-4 && command-5
-    directory: /bootstrap/availability-service-tests
-    include: post
+    include: 'pre'
+    git: 'git://availability-service/availability-service-bootstrap.git'
+    file: '/bootstrap/ruby-script.rb'
+    inline bash: 'command && command-1 && command-2'
+    inline bash: 'command-4 && command-5'
+    directory: '/bootstrap/availability-service-tests'
+    include: 'post'
 
-box: lonely-box, 1 instance with centos 5
-  vm flavor: medium
+box: 'lonely-box', 1 instance with 'centos 5'
+  vm flavor: 'medium'
   bootstrap sequence:
-    include: pre
-    git: git://lonely-box/bootstrap.git
+    include: 'pre'
+    git: 'git://lonely-box/bootstrap.git'
 
-box: another-lonely-box, 1 instance with debian 6
-  vm flavor: large
+box: 'another-lonely-box', 1 instance with 'debian 6'
+  vm flavor: 'large'
   bootstrap sequence:
-    file: /bootstrap/box-bootstrap.sh
-    include: post
+    file: '/bootstrap/box-bootstrap.sh'
+    include: 'post'
