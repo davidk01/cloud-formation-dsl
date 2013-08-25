@@ -1,6 +1,5 @@
 #require 'cloud/formation/dsl/version'
 require 'pegrb'
-require 'pathname'
 
 module Cloud
 module Formation
