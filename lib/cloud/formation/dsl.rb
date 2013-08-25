@@ -8,17 +8,20 @@ module Dsl
 
   # AST nodes
   class ValueNode < Struct.new(:value); end
+  class PairNode < Struct.new(:key, :value); end
   class Name < ValueNode; end
   class NameList < ValueNode; end
   class Integer < ValueNode; end
   class IntegerList < ValueNode; end
   class PoolHeader < Struct.new(:pool_size, :pool_name, :image_name); end
+  class BoxHeader < Struct.new(:box_count, :name, :image_name); end
   class BootstrapSpec < Struct.new(:spec); end
   class GitSpec < BootstrapSpec; end
   class FileSpec < BootstrapSpec; end
   class DirectorySpec < BootstrapSpec; end
   class InlineBashSpec < BootstrapSpec; end
-  class BootstrapSpecs < ValueNode; end
+  class IncludeSpec < BootstrapSpec; end
+  class BootstrapSpecs < Struct.new(:sequence_name, :specs); end
 
   @grammar = Grammar.rules do
     # fundamental building blocks
@@ -50,15 +53,23 @@ module Dsl
       [Pathname.new('/' + s[:head][0].value + '/' + s[:tail].map(&:value).join('/'))]
     }
 
+    # box definition component
+    box_header = (m('box: ') > name[:box_name] > m(', ') >
+     integer[:box_count] > (m(' instance with ') | m(' instances with ')) >
+     name[:image_name] > ws.many.any > newline) >> ->(s) {
+      [BoxHeader.new(s[:box_count].first, s[:box_name].first, s[:image_name].first)]
+    }
+
     # pool definition block components
-    pool_header = (m('pool: ') > integer[:size] > m(' of ') > one_of("'") >
-     name[:pool_name] > one_of("'") > m(' with ') > one_of("'") >
-     name[:image_name] > one_of("'") > ws.many.any > newline) >> ->(s) {
+    pool_header = (m('pool: ') > name[:pool_name] > m(', ') >
+     integer[:size] > (m(' instance with ') | m(' instances with ')) >
+     name[:image_name] > ws.many.any > newline) >> ->(s) {
      [PoolHeader.new(s[:size].first, s[:pool_name].first, s[:image_name].first)]
     }
 
     # bootstrap specs
-    bootstrap_type = m('git: ') | m('file: ') | m('inline bash: ') | m('directory: ')
+    bootstrap_type = m('git: ') | m('file: ') | m('inline bash: ') |
+     m('directory: ') | m('include: ')
     bootstrap_spec = (bootstrap_type[:type] >
      ((wildcard > !newline).many > wildcard)[:spec]) >> ->(s) {
       type = s[:type].map(&:text).join
@@ -72,14 +83,28 @@ module Dsl
         [InlineBashSpec.new(spec)]
       when 'directory: '
         [DirectorySpec.new(spec)]
+      when 'include: '
+        [IncludeSpec.new(spec)]
       end
     }
-    bootstrap_spec_header = ws.many.any > m('bootstrap:')
+    bootstrap_spec_header = ws.many.any > m('bootstrap sequence:') >
+      (one_of(' ') > name[:sequence_name]).any
     bootstrap_specs = (ws.many.any > bootstrap_spec[:first] >
      (newline.ignore > ws.many.any.ignore > bootstrap_spec).many.any[:rest]) >> ->(s) {
-       [BootstrapSpecs.new(s[:first] + s[:rest])]
+       [BootstrapSpecs.new((s[:sequence_name] || []).first, s[:first] + s[:rest])]
     }
     bootstrap_spec_list = bootstrap_spec_header.ignore > newline.ignore > bootstrap_specs
+
+    # somewhat optional components, as in the "default:" section should define
+    # values for these things which can then be overriden by specifying the value
+    # in the block
+    optional_component = (ws.many.any.ignore > (m('ssh key name: ') |
+     m('pem file: ') | m('security groups: '))[:optional_key] >
+     (name | absolute_path)[:optional_key_value]) >> ->(s) {
+    }
+    optional_component_list = (optional_component[:first] > (newline >
+      optional_component).many.any[:rest]) >> ->(s) {
+    }
 
     # pool definition
     pool_def_block = (pool_header[:header] >
@@ -89,6 +114,11 @@ module Dsl
       header, flavor = s[:header].first, s[:flavor_name].first
       ports = s[:ports] || IntegerList.new([Integer.new(80), Integer.new(8080)])
       require 'pry'; binding.pry
+    }
+
+    pool_def_blocks = (pool_def_block[:first] >
+     (newline > pool_def_block).many.any[:rest]) >> ->(s) {
+     require 'pry'; binding.pry
     }
  
     rule :start, pool_def_block
