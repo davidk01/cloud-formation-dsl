@@ -10,7 +10,7 @@ module Grammar
     }
   end
 
-  @grammar = Grammar.rules do
+  @grammar = ::Grammar.rules do
     # fundamental building blocks
     ws, newline = one_of(' ', "\t"), one_of("\n", "\r\n", "\r")
     comment = (one_of('#') > (wildcard > !newline).many.any > wildcard > newline.many).ignore
@@ -19,7 +19,7 @@ module Grammar
     integer = (one_of(/[1-9]/)[:first] > one_of(/\d/).many.any[:rest]) >> ->(s) {
       [Integer.new((s[:first][0].text + s[:rest].map(&:text).join).to_i)]
     }
-    integer_list = Dsl::listify(integer, m(', '), IntegerList)
+    integer_list = Dsl::Grammar::listify(integer, m(', '), IntegerList)
 
     # key, value definitions
     key = (one_of(/[a-zA-Z]/).many > (one_of('-', ' ') >
@@ -35,13 +35,13 @@ module Grammar
      [s[:quoted_value].map(&:text).join]
     }
     quoted_value = single_quoted_value | double_quoted_value
-    quoted_value_list = Dsl::listify(quoted_value, m(', '), ValueList)
+    quoted_value_list = Dsl::Grammar::listify(quoted_value, m(', '), ValueList)
 
     # pair, pair list definitions
     generic_pair = (ws.many.any > key[:key] > m(': ') > quoted_value_list[:value]) >> ->(s) {
       [PairNode.new(s[:key].first, s[:value].first)]
     }
-    generic_pair_list = Dsl::listify(generic_pair, newline, PairList)
+    generic_pair_list = Dsl::Grammar::listify(generic_pair, newline, PairList)
 
     # vm spec requires certain common things
     vm_spec = (quoted_value[:name] > m(', ') > integer[:count] >
@@ -54,7 +54,7 @@ module Grammar
      newline > generic_pair_list[:sequence]) >> ->(s) {
       [NamedBootstrapSequence.new(s[:sequence_name].first, s[:sequence].first)]
     }
-    named_bootstrap_sequence_list = Dsl::listify(named_bootstrap_sequence,
+    named_bootstrap_sequence_list = Dsl::Grammar::listify(named_bootstrap_sequence,
      newline.many, NamedBootstrapSequenceList)
 
     # pool definition blocks
@@ -67,7 +67,7 @@ module Grammar
        s[:flavor_name].first, (s[:ports] || []).first,
        s[:bootstrap_sequence].first)]
     }
-    pool_def_block_list = Dsl::listify(pool_def_block, newline.many, PoolDefinitionList)
+    pool_def_block_list = Dsl::Grammar::listify(pool_def_block, newline.many, PoolDefinitionList)
 
     #box definition blocks
     box_def_block = (m('box: ') > vm_spec[:vm_spec] > newline >
@@ -77,7 +77,7 @@ module Grammar
       [BoxDefinition.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
     }
-    box_def_block_list = Dsl::listify(box_def_block, newline.many, BoxDefinitionList)
+    box_def_block_list = Dsl::Grammar::listify(box_def_block, newline.many, BoxDefinitionList)
 
     # default key, value list
     defaults = (m('defaults:') > newline > generic_pair_list[:defaults]) >> ->(s) {
