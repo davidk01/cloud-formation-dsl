@@ -7,16 +7,30 @@ module Dsl
 
   # AST nodes
   class ValueNode < Struct.new(:value); end
-  class PairNode < Struct.new(:key, :value); end
+  class PairNode < Struct.new(:key, :value)
+    def key_match?(regex)
+      unless key.value =~ regex
+        raise StandardError, "Key match failure: key = #{key}."
+      end
+      true
+    end
+  end
   class Integer < ValueNode; end
   class IntegerList < ValueNode; end
   class Key < ValueNode; end
   class PairList < ValueNode; end
-  class QuotedValue < ValueNode; end
   class QuotedValueList < ValueNode; end
   class VMSpec < Struct.new(:name, :count, :image_name); end
-  class NamedBootstrapSequence < Struct.new(:name, :sequence); end
-  class BootstrapSequenceList < ValueNode; end
+  class NamedBootstrapSequence < Struct.new(:name, :sequence)
+    def valid?
+      sequence.value.all? do |pair|
+        pair.key_match?(/git|file|inline bash|directory|include/)
+      end
+    end
+  end
+  class NamedBootstrapSequenceList < ValueNode
+    def valid?; value.all?(&:valid?); end
+  end
   class PoolDefinition < Struct.new(:vm_spec, :flavor, :ports, :bootstrap_sequence); end
   class PoolDefinitionList < ValueNode; end
   class BoxDefinition < Struct.new(:vm_spec, :falvor, :bootstrap_sequence); end
@@ -45,14 +59,13 @@ module Dsl
      one_of(/[a-zA-Z0-9_\. ]/).many).many.any)[:n] >> ->(s) {
       [Key.new(s[:n].map(&:text).join)]
     }
-
     double_quoted_value = (one_of('"') > ((wildcard > !one_of('"')).many.any >
      wildcard)[:quoted_value] > one_of('"')) >> ->(s) {
-      [QuotedValue.new(s[:quoted_value].map(&:text).join)]
+      [s[:quoted_value].map(&:text).join]
     }
     single_quoted_value = (one_of("'") > ((wildcard > !one_of("'")).many.any >
      wildcard)[:quoted_value] > one_of("'")) >> ->(s) {
-     [QuotedValue.new(s[:quoted_value].map(&:text).join)]
+     [s[:quoted_value].map(&:text).join]
     }
     quoted_value = single_quoted_value | double_quoted_value
     quoted_value_list = Dsl::listify(quoted_value, m(', '), QuotedValueList)
@@ -75,7 +88,7 @@ module Dsl
       [NamedBootstrapSequence.new(s[:sequence_name].first, s[:sequence].first)]
     }
     named_bootstrap_sequence_list = Dsl::listify(named_bootstrap_sequence,
-     newline.many, BootstrapSequenceList)
+     newline.many, NamedBootstrapSequenceList)
 
     # pool definition blocks
     pool_def_block = (m('pool: ') > vm_spec[:vm_spec] > newline >
@@ -93,7 +106,7 @@ module Dsl
     box_def_block = (m('box: ') > vm_spec[:vm_spec] > newline >
      ws.many.any > m('vm flavor: ') > quoted_value[:flavor_name] > newline >
      ws.many.any > m('bootstrap sequence:') > newline >
-     generic_pair_list[:bootstrap_sequence]) >> ->(s) {
+     generic_pair_list[:named_bootstrap_sequence]) >> ->(s) {
       [BoxDefinition.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
     }
@@ -111,7 +124,12 @@ module Dsl
      (named_bootstrap_sequence_list[:bootstrap_sequence] > newline.many).any >
      (pool_def_block_list[:pool_definitions] > newline.many).any >
      box_def_block_list.any[:box_definitions]) >> ->(s) {
-      require 'pry'; binding.pry
+      {
+       :defaults => s[:defaults].first,
+       :named_bootstrap_sequence => s[:bootstrap_sequence].first,
+       :pool_definitions => s[:pool_definitions].first,
+       :box_definitions => s[:box_definitions].first
+      }
     }
 
   end
