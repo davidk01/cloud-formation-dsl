@@ -23,7 +23,7 @@ module Grammar
 
     # key, value definitions
     key = (one_of(/[a-zA-Z]/).many > (one_of('-', ' ') >
-     one_of(/[a-zA-Z0-9_\. ]/).many).many.any)[:n] >> ->(s) {
+     one_of(/[a-zA-Z0-9_\. \-]/).many).many.any)[:n] >> ->(s) {
       [s[:n].map(&:text).join]
     }
     double_quoted_value = (one_of('"') > ((wildcard > !one_of('"')).many.any >
@@ -50,7 +50,7 @@ module Grammar
     }
 
     #named bootstrap sequences
-    named_bootstrap_sequence = (m('bootstrap sequence: ') > quoted_value[:sequence_name] >
+    named_bootstrap_sequence = (m('bootstrap-sequence: ') > quoted_value[:sequence_name] >
      newline > generic_pair_list[:sequence]) >> ->(s) {
       [NamedBootstrapSequence.new(s[:sequence_name].first, s[:sequence].first)]
     }
@@ -59,9 +59,9 @@ module Grammar
 
     # pool definition blocks
     pool_def_block = (m('pool: ') > vm_spec[:vm_spec] > newline >
-     ws.many.any > m('vm flavor: ') > quoted_value[:flavor_name] > newline >
-     (ws.many.any > m('service ports: ') > integer_list[:ports] > newline).any >
-     ws.many.any > m('bootstrap sequence:') > newline >
+     ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name] > newline >
+     (ws.many.any > m('service-ports: ') > integer_list[:ports] > newline).any >
+     ws.many.any > m('bootstrap-sequence:') > newline >
      generic_pair_list[:bootstrap_sequence]) >> ->(s) {
       [PoolDefinition.new(s[:vm_spec].first,
        s[:flavor_name].first, (s[:ports] || []).first,
@@ -71,8 +71,8 @@ module Grammar
 
     #box definition blocks
     box_def_block = (m('box: ') > vm_spec[:vm_spec] > newline >
-     ws.many.any > m('vm flavor: ') > quoted_value[:flavor_name] > newline >
-     ws.many.any > m('bootstrap sequence:') > newline >
+     ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name] > newline >
+     ws.many.any > m('bootstrap-sequence:') > newline >
      generic_pair_list[:bootstrap_sequence]) >> ->(s) {
       [BoxDefinition.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
