@@ -14,7 +14,7 @@ pool: 'miloapi', 4 instances with 'ubuntu 12.04'
   vm flavor: 'tiny'
   service ports: 6379, 8080, 1234, 80
   bootstrap sequence:
-    include: 'pre'
+    include: 'pre', 'post'
     git: 'git://miloapi/api-bootstrap.git'
     file: '/bootstrap/bash-script.sh'
     inline bash: 'some-command && some-other-command && yet-another-command'

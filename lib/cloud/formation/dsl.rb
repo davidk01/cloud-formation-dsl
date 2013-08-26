@@ -7,35 +7,50 @@ module Dsl
 
   # AST nodes
   class ValueNode < Struct.new(:value); end
-  class PairNode < Struct.new(:key, :value)
-    def key_match?(regex)
-      unless key.value =~ regex
-        raise StandardError, "Key match failure: key = #{key}."
-      end
-      true
-    end
-  end
+  class PairNode < Struct.new(:key, :value); end
   class Integer < ValueNode; end
   class IntegerList < ValueNode; end
-  class Key < ValueNode; end
   class PairList < ValueNode; end
   class QuotedValueList < ValueNode; end
   class VMSpec < Struct.new(:name, :count, :image_name); end
-  class NamedBootstrapSequence < Struct.new(:name, :sequence)
-    def valid?
-      sequence.value.all? do |pair|
-        pair.key_match?(/git|file|inline bash|directory|include/)
-      end
-    end
-  end
-  class NamedBootstrapSequenceList < ValueNode
-    def valid?; value.all?(&:valid?); end
-  end
+  class NamedBootstrapSequence < Struct.new(:name, :sequence); end
+  class NamedBootstrapSequenceList < ValueNode; end
   class PoolDefinition < Struct.new(:vm_spec, :flavor, :ports, :bootstrap_sequence); end
   class PoolDefinitionList < ValueNode; end
   class BoxDefinition < Struct.new(:vm_spec, :falvor, :bootstrap_sequence); end
   class BoxDefinitionList < ValueNode; end
   class Defaults < ValueNode; end
+
+  ##
+  # This is the final result of the parsing process and contains all the necessary
+  # methods for going from an AST to something that can be plugged into a given
+  # backend for spinning up instances, monitoring, remediation, etc.
+
+  class RawCloudFormation < Struct.new(:defaults, :bootstrap_sequences, :pools, :boxes)
+
+    ##
+    # Go through the pool and box definitions and replace any 'include' nodes
+    # with the sequences they reference. This should be an indempotent method
+    # and at the end of it there should be no 'include' nodes left.
+
+    def resolve_bootstrap_sequence_includes
+      pools.value.each do |pool|
+        bootstrap_sequence = pool_bootstrap_sequence.value
+        bootstrap_sequence.map! do |pair_node|
+          if pair_node.key == 'include' && (seq_names = pair_node.value.value)
+            seq = bootstrap_sequences.value.select {|s| seq_names.include?(s.name)}
+            unless seq.length == seq_names.length
+              raise StandardError, "Named sequence does not exist: names = #{seq_names.join(', ')}."
+            end
+            seq.map {|named_seq| named_seq.sequence.value}.flatten
+          else
+            pair_node
+          end
+        end
+        bootstrap_sequence.flatten!
+      end
+    end
+  end
 
   def self.listify(expr, sep, node_type)
     (expr[:first] > (sep.ignore > expr).many.any[:rest]) >> ->(s) {
@@ -57,7 +72,7 @@ module Dsl
     # key, value definitions
     key = (one_of(/[a-zA-Z]/).many > (one_of('-', ' ') > 
      one_of(/[a-zA-Z0-9_\. ]/).many).many.any)[:n] >> ->(s) {
-      [Key.new(s[:n].map(&:text).join)]
+      [s[:n].map(&:text).join]
     }
     double_quoted_value = (one_of('"') > ((wildcard > !one_of('"')).many.any >
      wildcard)[:quoted_value] > one_of('"')) >> ->(s) {
@@ -106,7 +121,7 @@ module Dsl
     box_def_block = (m('box: ') > vm_spec[:vm_spec] > newline >
      ws.many.any > m('vm flavor: ') > quoted_value[:flavor_name] > newline >
      ws.many.any > m('bootstrap sequence:') > newline >
-     generic_pair_list[:named_bootstrap_sequence]) >> ->(s) {
+     generic_pair_list[:bootstrap_sequence]) >> ->(s) {
       [BoxDefinition.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
     }
@@ -121,20 +136,20 @@ module Dsl
     # sequences, followed by some pool definitions and then followed by some box definitions
     # theoretically the entire thing can be empty
     rule :start, ((defaults[:defaults] > newline.many).any >
-     (named_bootstrap_sequence_list[:bootstrap_sequence] > newline.many).any >
+     (named_bootstrap_sequence_list[:named_bootstrap_sequences] > newline.many).any >
      (pool_def_block_list[:pool_definitions] > newline.many).any >
      box_def_block_list.any[:box_definitions]) >> ->(s) {
-      {
-       :defaults => s[:defaults].first,
-       :named_bootstrap_sequence => s[:bootstrap_sequence].first,
-       :pool_definitions => s[:pool_definitions].first,
-       :box_definitions => s[:box_definitions].first
-      }
+      RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
+       s[:pool_definitions].first, s[:box_definitions].first)
     }
 
   end
 
   def self.parse(str); @grammar.parse(str); end
+
+  def self.pipeline(raw_ast)
+    raw_ast.resolve_bootstrap_sequence_includes
+  end
 
 end
 end
