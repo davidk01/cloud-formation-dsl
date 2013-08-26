@@ -31,6 +31,7 @@ module Dsl
         end
         bootstrap_sequence.flatten!
       end
+      self
     end
 
   end
