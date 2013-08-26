@@ -17,7 +17,7 @@ module Dsl
 
     def resolve_bootstrap_sequence_includes
       pools.value.each do |pool|
-        bootstrap_sequence = pool_bootstrap_sequence.value
+        bootstrap_sequence = pool.bootstrap_sequence.value
         bootstrap_sequence.map! do |pair_node|
           if pair_node.key == 'include' && (seq_names = pair_node.value.value)
             seq = bootstrap_sequences.value.select {|s| seq_names.include?(s.name)}
