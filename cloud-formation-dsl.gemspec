@@ -1,11 +1,11 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'cloud/formation/dsl/version'
+require 'dsl/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "cloud-formation-dsl"
-  spec.version       = Cloud::Formation::Dsl::VERSION
+  spec.version       = Dsl::VERSION
   spec.authors       = ["david karapetyan"]
   spec.email         = ["dkarapetyan@scriptcrafty.com"]
   spec.description   = %q{Simple DSL for describing pools of VMs.}
