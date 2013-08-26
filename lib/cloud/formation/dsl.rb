@@ -11,7 +11,7 @@ module Dsl
   class Integer < ValueNode; end
   class IntegerList < ValueNode; end
   class PairList < ValueNode; end
-  class QuotedValueList < ValueNode; end
+  class ValueList < ValueNode; end
   class VMSpec < Struct.new(:name, :count, :image_name); end
   class NamedBootstrapSequence < Struct.new(:name, :sequence); end
   class NamedBootstrapSequenceList < ValueNode; end
@@ -50,6 +50,7 @@ module Dsl
         bootstrap_sequence.flatten!
       end
     end
+
   end
 
   def self.listify(expr, sep, node_type)
@@ -83,7 +84,7 @@ module Dsl
      [s[:quoted_value].map(&:text).join]
     }
     quoted_value = single_quoted_value | double_quoted_value
-    quoted_value_list = Dsl::listify(quoted_value, m(', '), QuotedValueList)
+    quoted_value_list = Dsl::listify(quoted_value, m(', '), ValueList)
 
     # pair, pair list definitions
     generic_pair = (ws.many.any > key[:key] > m(': ') > quoted_value_list[:value]) >> ->(s) {
