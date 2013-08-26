@@ -1,20 +1,11 @@
 # Cloud::Formation::Dsl
 
-TODO: Write a gem description
+Set of tools for parsing a simple cloud formation specification and then transforming it into a set of provisioning and bootstrapping commands.
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-    gem 'cloud-formation-dsl'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install cloud-formation-dsl
+    $ git clone git://github.com/davidk01/cloud-formation-dsl.git
+    $ cd cloud-formation-dsl && bundle && rake install
 
 ## Usage
 
