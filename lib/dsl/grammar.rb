@@ -16,7 +16,7 @@ module Grammar
     comment = (one_of('#') > (wildcard > !newline).many.any > wildcard > newline.many).ignore
 
     # used for port specifications
-    integer = (one_of(/[1-9]/)[:first] > one_of(/\d/).many.any[:rest]) >> ->(s) {
+    integer = (one_of(/[1-9]/)[:first] > one_of(/\d/).many[:rest].any) >> ->(s) {
       [Integer.new((s[:first][0].text + s[:rest].map(&:text).join).to_i)]
     }
     integer_list = Dsl::Grammar::listify(integer, m(', '), IntegerList)
