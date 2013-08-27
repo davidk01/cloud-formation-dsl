@@ -64,7 +64,7 @@ module Grammar
 
     # load balancer definition
     load_balancer_block = (m('load-balancer: ') > vm_spec[:vm_spec] > newline >
-     vm_flavor > newline >
+     vm_flavor >
      bootstrap_sequence) >> ->(s) {
       [LoadBalancerDefinitionBlock.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
