@@ -100,7 +100,7 @@ module Grammar
     # theoretically the entire thing can be empty
     rule :start, ((defaults > newline.many.ignore).any[:defaults] > # (defaults section)?
      (named_bootstrap_sequence_list > newline.many.ignore).any[:named_bootstrap_sequences] > # (bootstrap sequences)?
-     (load_balancer_block[:load_balancer] > newline.many >
+     (load_balancer_block[:load_balancer] > newline.many.any >
       pool_def_block_list[:pool_definitions] > newline.many).any > # (lb pools)?
      box_def_block_list.any[:box_definitions]) >> ->(s) {
       require 'pry'; binding.pry
