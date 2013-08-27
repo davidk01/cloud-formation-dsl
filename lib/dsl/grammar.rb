@@ -5,7 +5,7 @@ module Dsl
 module Grammar
 
   def self.listify(expr, sep, node_type)
-    (expr[:first] > (sep.ignore > expr).many.any[:rest]) >> ->(s) {
+    (expr[:first] > (sep.ignore > expr).many[:rest].any) >> ->(s) {
       [node_type.new(s[:first] + s[:rest])]
     }
   end
