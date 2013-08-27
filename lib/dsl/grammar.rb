@@ -103,6 +103,10 @@ module Grammar
      (load_balancer_block[:load_balancer] > newline.many >
       pool_def_block_list[:pool_definitions] > newline.many).any > # (lb pools)?
      box_def_block_list[:box_definitions].any) >> ->(s) {
+      [:defaults, :named_bootstrap_sequence, :pool_definitions,
+       :load_balancer, :box_definitions].each do |sym|
+        s[sym] ||= []
+      end
       RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
        s[:pool_definitions].first, s[:load_balancer].first, s[:box_definitions].first)
     }
