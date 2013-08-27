@@ -16,14 +16,14 @@ module Grammar
     comment = (one_of('#') > (wildcard > !newline).many.any > wildcard > newline.many).ignore
 
     # used for port specifications
-    integer = (one_of(/[1-9]/)[:first] > one_of(/\d/).many[:rest].any) >> ->(s) {
+    integer = (one_of(/[1-9]/)[:first] > one_of(/\d/).many.any[:rest]) >> ->(s) {
       [Integer.new((s[:first][0].text + s[:rest].map(&:text).join).to_i)]
     }
     integer_list = Dsl::Grammar::listify(integer, m(', '), IntegerList)
 
     # key, value definitions
     key = (one_of(/[a-zA-Z]/).many > (one_of('-', ' ') >
-     one_of(/[a-zA-Z0-9_\. \-]/).many).many.any)[:n] >> ->(s) {
+     one_of(/[a-zA-Z0-9_\. ]/).many).many.any)[:n] >> ->(s) {
       [s[:n].map(&:text).join]
     }
     double_quoted_value = (one_of('"') > ((wildcard > !one_of('"')).many.any >
@@ -98,11 +98,11 @@ module Grammar
     # so a cloud formation spec is just a default section, followed by named bootstrap
     # sequences, followed by some pool definitions and then followed by some box definitions
     # theoretically the entire thing can be empty
-    rule :start, ((defaults[:defaults] > newline.many).any > # (defaults section)?
-     (named_bootstrap_sequence_list[:named_bootstrap_sequences] > newline.many).any > # (bootstrap sequences)?
+    rule :start, ((defaults > newline.many.ignore).any[:defaults] > # (defaults section)?
+     (named_bootstrap_sequence_list > newline.many.ignore).any[:named_bootstrap_sequences] > # (bootstrap sequences)?
      (load_balancer_block[:load_balancer] > newline.many >
       pool_def_block_list[:pool_definitions] > newline.many).any > # (lb pools)?
-     box_def_block_list[:box_definitions].any) >> ->(s) {
+     box_def_block_list.any[:box_definitions]) >> ->(s) {
       [:defaults, :named_bootstrap_sequence, :pool_definitions,
        :load_balancer, :box_definitions].each do |sym|
         s[sym] ||= []
