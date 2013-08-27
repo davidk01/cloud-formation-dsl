@@ -5,7 +5,7 @@ module Dsl
 module Grammar
 
   def self.listify(expr, sep, node_type)
-    (expr[:first] > (sep.ignore > expr).many[:rest].any) >> ->(s) {
+    (expr[:first] > (sep.ignore > expr).many.any[:rest]) >> ->(s) {
       [node_type.new(s[:first] + s[:rest])]
     }
   end
@@ -58,7 +58,7 @@ module Grammar
      newline.many, NamedBootstrapSequenceList)
 
     # common items used in various vm block definitions
-    vm_flavor = ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name]
+    vm_flavor = ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name] > newline
     bootstrap_sequence = ws.many.any > m('bootstrap_sequence:') > newline >
      generic_pair_list[:bootstrap_sequence]
 
