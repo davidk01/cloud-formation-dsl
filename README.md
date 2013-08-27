@@ -4,10 +4,11 @@ Set of tools for parsing a simple cloud formation specification and then transfo
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Add these lines to your application's Gemfile:
 
     gem 'dsl', :git => 'git://github.com/davidk01/cloud-formation-dsl.git', :branch => 'master'
-
+    gem 'pegrb', :git => 'git://github.com/davidk01/pegrb.git', :branch => 'master'
+    
 And then execute:
 
     $ bundle
