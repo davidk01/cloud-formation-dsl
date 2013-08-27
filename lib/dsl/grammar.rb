@@ -103,7 +103,6 @@ module Grammar
      (load_balancer_block[:load_balancer] > newline.many >
       pool_def_block_list[:pool_definitions] > newline.many).any > # (lb pools)?
      box_def_block_list.any[:box_definitions]) >> ->(s) {
-      require 'pry'; binding.pry
       [:defaults, :named_bootstrap_sequence, :pool_definitions,
        :load_balancer, :box_definitions].each do |sym|
         s[sym] ||= []
@@ -111,7 +110,6 @@ module Grammar
       if s[:load_balancer].empty? && s[:box_definitions].empty?
         raise StandardError, "Either pool definitions or box definitions must be non-empty."
       end
-      require 'pry'; binding.pry
       RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
        s[:pool_definitions].first, s[:load_balancer].first, s[:box_definitions].first)
     }
