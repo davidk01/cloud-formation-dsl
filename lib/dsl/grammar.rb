@@ -58,13 +58,13 @@ module Grammar
      newline.many, NamedBootstrapSequenceList)
 
     # common items used in various vm block definitions
-    vm_flavor = ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name] > newline
-    bootstrap_sequence = ws.many.any > m('bootstrap_sequence:') > newline >
+    vm_flavor = ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name]
+    bootstrap_sequence = ws.many.any > m('bootstrap-sequence:') > newline >
      generic_pair_list[:bootstrap_sequence]
 
     # load balancer definition
     load_balancer_block = (m('load-balancer: ') > vm_spec[:vm_spec] > newline >
-     vm_flavor >
+     vm_flavor > newline >
      bootstrap_sequence) >> ->(s) {
       [LoadBalancerDefinitionBlock.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
@@ -100,7 +100,7 @@ module Grammar
     # theoretically the entire thing can be empty
     rule :start, ((defaults > newline.many.ignore).any[:defaults] > # (defaults section)?
      (named_bootstrap_sequence_list > newline.many.ignore).any[:named_bootstrap_sequences] > # (bootstrap sequences)?
-     (load_balancer_block[:load_balancer] > newline.many.any >
+     (load_balancer_block[:load_balancer] > newline.many >
       pool_def_block_list[:pool_definitions] > newline.many).any > # (lb pools)?
      box_def_block_list.any[:box_definitions]) >> ->(s) {
       require 'pry'; binding.pry
