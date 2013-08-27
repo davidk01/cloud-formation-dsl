@@ -5,8 +5,7 @@ module Dsl
 module Grammar
 
   def self.listify(expr, sep, node_type)
-    (expr[:first] > (sep.ignore > expr).many[:rest].any) >> ->(s) {
-      require 'pry'; binding.pry
+    (expr[:first] > (sep.ignore > expr).many.any[:rest]) >> ->(s) {
       [node_type.new(s[:first] + s[:rest])]
     }
   end
@@ -111,7 +110,6 @@ module Grammar
       if s[:load_balancer].empty? && s[:box_definitions].empty?
         raise StandardError, "Either pool definitions or box definitions must be non-empty."
       end
-      require 'pry'; binding.pry
       RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
        s[:pool_definitions].first, s[:load_balancer].first, s[:box_definitions].first)
     }
