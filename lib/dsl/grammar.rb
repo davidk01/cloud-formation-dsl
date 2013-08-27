@@ -57,12 +57,24 @@ module Grammar
     named_bootstrap_sequence_list = Dsl::Grammar::listify(named_bootstrap_sequence,
      newline.many, NamedBootstrapSequenceList)
 
+    # common items used in various vm block definitions
+    vm_flavor = ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name]
+    bootstrap_sequence = ws.many.any > m('bootstrap_sequence:') > newline >
+     generic_pair_list[:bootstrap_sequence]
+
+    # load balancer definition
+    load_balancer_block = (m('load-balancer: ') > vm_spec[:vm_spec] > newline >
+     vm_flavor > newline >
+     bootstrap_sequence) >> ->(s) {
+      [LoadBalancerDefinitionBlock.new(s[:vm_spec].first, s[:flavor_name].first,
+       s[:bootstrap_sequence].first)]
+    }
+
     # pool definition blocks
     pool_def_block = (m('pool: ') > vm_spec[:vm_spec] > newline >
-     ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name] > newline >
+     vm_flavor > newline > 
      (ws.many.any > m('service-ports: ') > integer_list[:ports] > newline).any >
-     ws.many.any > m('bootstrap-sequence:') > newline >
-     generic_pair_list[:bootstrap_sequence]) >> ->(s) {
+     bootstrap_sequence) >> ->(s) {
       [PoolDefinition.new(s[:vm_spec].first,
        s[:flavor_name].first, (s[:ports] || []).first,
        s[:bootstrap_sequence].first)]
@@ -71,9 +83,8 @@ module Grammar
 
     #box definition blocks
     box_def_block = (m('box: ') > vm_spec[:vm_spec] > newline >
-     ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name] > newline >
-     ws.many.any > m('bootstrap-sequence:') > newline >
-     generic_pair_list[:bootstrap_sequence]) >> ->(s) {
+     vm_flavor > newline >
+     bootstrap_sequence) >> ->(s) {
       [BoxDefinition.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
     }
@@ -87,12 +98,13 @@ module Grammar
     # so a cloud formation spec is just a default section, followed by named bootstrap
     # sequences, followed by some pool definitions and then followed by some box definitions
     # theoretically the entire thing can be empty
-    rule :start, ((defaults[:defaults] > newline.many).any >
-     (named_bootstrap_sequence_list[:named_bootstrap_sequences] > newline.many).any >
-     (pool_def_block_list[:pool_definitions] > newline.many).any >
-     box_def_block_list.any[:box_definitions]) >> ->(s) {
+    rule :start, ((defaults[:defaults] > newline.many).any > # (defaults section)?
+     (named_bootstrap_sequence_list[:named_bootstrap_sequences] > newline.many).any > # (bootstrap sequences)?
+     (load_balancer_block[:load_balancer] > newline.many >
+      pool_def_block_list[:pool_definitions] > newline.many).any > # (lb pools)?
+     box_def_block_list[:box_definitions].any) >> ->(s) {
       RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
-       s[:pool_definitions].first, s[:box_definitions].first)
+       s[:pool_definitions].first, s[:load_balancer].first, s[:box_definitions].first)
     }
 
   end

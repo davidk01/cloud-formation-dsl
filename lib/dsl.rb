@@ -8,7 +8,21 @@ module Dsl
   # methods for going from an AST to something that can be plugged into a given
   # backend for spinning up instances, monitoring, remediation, etc.
 
-  class RawCloudFormation < Struct.new(:defaults, :bootstrap_sequences, :pools, :boxes)
+  class RawCloudFormation < Struct.new(:defaults, :bootstrap_sequences, :load_balancer, :pools, :boxes)
+
+    def resolve_includes(bootstrap_sequence)
+      bootstrap_sequence.map! do |pair_node|
+        if pair_node.key == 'include' && (seq_names = pair_node.value.value)
+          seq = bootstrap_sequences.value.select {|s| seq_names.include?(s.name)}
+          unless seq.length == seq_names.length
+            raise StandardError, "Named sequence does not exist: names = #{seq_names.join(', ')}."
+          end
+          seq.map {|named_seq| named_seq.sequence.value}.flatten
+        else
+          pair_node
+        end
+      end.flatten!
+    end
 
     ##
     # Go through the pool and box definitions and replace any 'include' nodes
@@ -18,19 +32,9 @@ module Dsl
     def resolve_bootstrap_sequence_includes
       pools.value.each do |pool|
         bootstrap_sequence = pool.bootstrap_sequence.value
-        bootstrap_sequence.map! do |pair_node|
-          if pair_node.key == 'include' && (seq_names = pair_node.value.value)
-            seq = bootstrap_sequences.value.select {|s| seq_names.include?(s.name)}
-            unless seq.length == seq_names.length
-              raise StandardError, "Named sequence does not exist: names = #{seq_names.join(', ')}."
-            end
-            seq.map {|named_seq| named_seq.sequence.value}.flatten
-          else
-            pair_node
-          end
-        end
-        bootstrap_sequence.flatten!
+        resolve_includes(bootstrap_sequence)
       end
+      require 'pry'; binding.pry
       self
     end
 
