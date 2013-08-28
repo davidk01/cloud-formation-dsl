@@ -31,12 +31,15 @@ module Dsl
     # and at the end of it there should be no 'include' nodes left.
 
     def resolve_bootstrap_sequence_includes
-      # pool includes
-      pools.value.each {|pool| resolve_includes(pool.bootstrap_sequence.value)}
-      # load balancer includes
-      resolve_includes(load_balancer.bootstrap_sequence.value)
+      # pool and load balancer includes
+      if pools
+        pools.value.each {|pool| resolve_includes(pool.bootstrap_sequence.value)}
+        resolve_includes(load_balancer.bootstrap_sequence.value)
+      end
       # box includes
-      boxes.value.each {|box| resolve_includes(box.bootstrap_sequence.value)}
+      if boxes
+        boxes.value.each {|box| resolve_includes(box.bootstrap_sequence.value)}
+      end
       # return self
       self
     end
