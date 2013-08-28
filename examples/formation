@@ -10,6 +10,12 @@ bootstrap-sequence: 'post'
   file: '/scripts/sanity-check.sh'
   directory: '/scripts/global-sanity-checks'
 
+load-balancer: 'lb', 1 instance with 'ubuntu 12.04'
+  vm-flavor: 'tiny'
+  bootstrap-sequence:
+    include: 'pre', 'post'
+    include: 'post'
+
 pool: 'miloapi', 4 instances with 'ubuntu 12.04'
   vm-flavor: 'tiny'
   service-ports: 6379, 8080, 1234, 80

@@ -8,7 +8,8 @@ module Dsl
   # methods for going from an AST to something that can be plugged into a given
   # backend for spinning up instances, monitoring, remediation, etc.
 
-  class RawCloudFormation < Struct.new(:defaults, :bootstrap_sequences, :load_balancer, :pools, :boxes)
+  class RawCloudFormation < Struct.new(:defaults, :bootstrap_sequences,
+   :load_balancer, :pools, :boxes)
 
     def resolve_includes(bootstrap_sequence)
       bootstrap_sequence.map! do |pair_node|
@@ -30,11 +31,13 @@ module Dsl
     # and at the end of it there should be no 'include' nodes left.
 
     def resolve_bootstrap_sequence_includes
-      pools.value.each do |pool|
-        bootstrap_sequence = pool.bootstrap_sequence.value
-        resolve_includes(bootstrap_sequence)
-      end
-      require 'pry'; binding.pry
+      # pool includes
+      pools.value.each {|pool| resolve_includes(pool.bootstrap_sequence.value)}
+      # load balancer includes
+      resolve_includes(load_balancer.bootstrap_sequence.value)
+      # box includes
+      boxes.value.each {|box| resolve_includes(box.bootstrap_sequence.value)}
+      # return self
       self
     end
 

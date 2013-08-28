@@ -111,7 +111,7 @@ module Grammar
         raise StandardError, "Either pool definitions or box definitions must be non-empty."
       end
       RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
-       s[:pool_definitions].first, s[:load_balancer].first, s[:box_definitions].first)
+       s[:load_balancer].first, s[:pool_definitions].first, s[:box_definitions].first)
     }
 
   end
