@@ -40,7 +40,6 @@ module Dsl
       if boxes
         boxes.value.each {|box| resolve_includes(box.bootstrap_sequence.value)}
       end
-      # return self
       self
     end
 
