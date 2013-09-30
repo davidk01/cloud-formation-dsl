@@ -23,7 +23,7 @@ module Grammar
 
     # key, value definitions
     key = (one_of(/[a-zA-Z]/).many > (one_of('-', ' ') >
-     one_of(/[a-zA-Z0-9_\. ]/).many).many.any)[:n] >> ->(s) {
+     one_of(/[a-zA-Z0-9_\.]/).many).many.any)[:n] >> ->(s) {
       [s[:n].map(&:text).join]
     }
     double_quoted_value = (one_of('"') > ((wildcard > !one_of('"')).many.any >
