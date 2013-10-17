@@ -4,6 +4,10 @@ require 'dsl/ast'
 module Dsl
 module Grammar
 
+  ##
+  # Takes a pegrb expression, an expression that denotes the separator a resulting
+  # node type and splices things together to create a list like object.
+
   def self.listify(expr, sep, node_type)
     (expr[:first] > (sep.ignore > expr).many.any[:rest]) >> ->(s) {
       [node_type.new(s[:first] + s[:rest])]
@@ -13,7 +17,7 @@ module Grammar
   @grammar = ::Grammar.rules do
     # fundamental building blocks
     ws, newline = one_of(' ', "\t"), one_of("\n", "\r\n", "\r")
-    comment = (one_of('#') > (wildcard > !newline).many.any > wildcard > newline.many).ignore
+    comment = (one_of('#') > cut! > (wildcard > !newline).many.any > wildcard > newline.many).ignore
 
     # used for port specifications
     integer = (one_of(/[1-9]/)[:first] > one_of(/\d/).many.any[:rest]) >> ->(s) {
@@ -26,11 +30,11 @@ module Grammar
      one_of(/[a-zA-Z0-9_\.]/).many).many.any)[:n] >> ->(s) {
       [s[:n].map(&:text).join]
     }
-    double_quoted_value = (one_of('"') > ((wildcard > !one_of('"')).many.any >
+    double_quoted_value = (one_of('"') > cut! > ((wildcard > !one_of('"')).many.any >
      wildcard)[:quoted_value] > one_of('"')) >> ->(s) {
       [s[:quoted_value].map(&:text).join]
     }
-    single_quoted_value = (one_of("'") > ((wildcard > !one_of("'")).many.any >
+    single_quoted_value = (one_of("'") > cut! > ((wildcard > !one_of("'")).many.any >
      wildcard)[:quoted_value] > one_of("'")) >> ->(s) {
      [s[:quoted_value].map(&:text).join]
     }
@@ -38,19 +42,19 @@ module Grammar
     quoted_value_list = Dsl::Grammar::listify(quoted_value, m(', '), ValueList)
 
     # pair, pair list definitions
-    generic_pair = (ws.many.any > key[:key] > m(': ') > quoted_value_list[:value]) >> ->(s) {
+    generic_pair = (ws.many.any > key[:key] > m(': ') > cut! > quoted_value_list[:value]) >> ->(s) {
       [PairNode.new(s[:key].first, s[:value].first)]
     }
     generic_pair_list = Dsl::Grammar::listify(generic_pair, newline, PairList)
 
     # vm spec requires certain common things
-    vm_spec = (quoted_value[:name] > m(', ') > integer[:count] >
-     (m(' instance ') | m(' instances ')) > m('with ') > quoted_value[:image_name]) >> ->(s) {
-      [VMSpec.new(s[:name].first, s[:count].first, s[:image_name].first)]
+    vm_spec = (quoted_value[:pool_name] > m(', ') > cut! > integer[:count] >
+     (m(' instance ') | m(' instances ')) > cut! > m('with ') > cut! > quoted_value[:image_name]) >> ->(s) {
+      [VMSpec.new(s[:pool_name].first, s[:count].first, s[:image_name].first)]
     }
 
     #named bootstrap sequences
-    named_bootstrap_sequence = (m('bootstrap-sequence: ') > quoted_value[:sequence_name] >
+    named_bootstrap_sequence = (m('bootstrap-sequence: ') > cut! > quoted_value[:sequence_name] >
      newline > generic_pair_list[:sequence]) >> ->(s) {
       [NamedBootstrapSequence.new(s[:sequence_name].first, s[:sequence].first)]
     }
@@ -58,22 +62,21 @@ module Grammar
      newline.many, NamedBootstrapSequenceList)
 
     # common items used in various vm block definitions
-    vm_flavor = ws.many.any > m('vm-flavor: ') > quoted_value[:flavor_name]
-    bootstrap_sequence = ws.many.any > m('bootstrap-sequence:') > newline >
+    vm_flavor = ws.many.any > m('vm-flavor: ') > cut! > quoted_value[:flavor_name]
+    bootstrap_sequence = ws.many.any > m('bootstrap-sequence:') > cut! > newline >
      generic_pair_list[:bootstrap_sequence]
 
     # load balancer definition
-    load_balancer_block = (m('load-balancer: ') > vm_spec[:vm_spec] > newline >
-     vm_flavor > newline >
-     bootstrap_sequence) >> ->(s) {
+    load_balancer_block = (m('load-balancer: ') > cut! > vm_spec[:vm_spec] > newline >
+     vm_flavor > newline > bootstrap_sequence) >> ->(s) {
       [LoadBalancerDefinitionBlock.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
     }
 
     # pool definition blocks
-    pool_def_block = (m('pool: ') > vm_spec[:vm_spec] > newline >
+    pool_def_block = (m('pool: ') > cut! > vm_spec[:vm_spec] > newline >
      vm_flavor > newline > 
-     (ws.many.any > m('service-ports: ') > integer_list[:ports] > newline).any >
+     (ws.many.any > m('service-ports: ') > cut! > integer_list[:ports] > newline).any >
      bootstrap_sequence) >> ->(s) {
       [PoolDefinition.new(s[:vm_spec].first,
        s[:flavor_name].first, (s[:ports] || []).first,
@@ -82,16 +85,15 @@ module Grammar
     pool_def_block_list = Dsl::Grammar::listify(pool_def_block, newline.many, PoolDefinitionList)
 
     #box definition blocks
-    box_def_block = (m('box: ') > vm_spec[:vm_spec] > newline >
-     vm_flavor > newline >
-     bootstrap_sequence) >> ->(s) {
+    box_def_block = (m('box: ') > cut! > vm_spec[:vm_spec] > newline >
+     vm_flavor > newline > bootstrap_sequence) >> ->(s) {
       [BoxDefinition.new(s[:vm_spec].first, s[:flavor_name].first,
        s[:bootstrap_sequence].first)]
     }
     box_def_block_list = Dsl::Grammar::listify(box_def_block, newline.many, BoxDefinitionList)
 
     # default key, value list
-    defaults = (m('defaults:') > newline > generic_pair_list[:defaults]) >> ->(s) {
+    defaults = (m('defaults:') > cut! > newline > generic_pair_list[:defaults]) >> ->(s) {
       [Defaults.new(s[:defaults])]
     }
 
