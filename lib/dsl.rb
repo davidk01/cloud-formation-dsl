@@ -18,7 +18,6 @@ module Dsl
           unless seq.length == seq_names.length
             raise StandardError, "Named sequence does not exist: names = #{seq_names.join(', ')}."
           end
-          require 'pry'; binding.pry
           seq.map {|named_seq| named_seq.sequence}.flatten
         else
           pair_node
@@ -39,7 +38,6 @@ module Dsl
       end
       # box includes
       if boxes
-        require 'pry'; binding.pry
         boxes.value.each {|box| resolve_includes(box.bootstrap_sequence)}
       end
       self
