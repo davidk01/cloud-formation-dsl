@@ -13,8 +13,8 @@ module Dsl
 
     def resolve_includes(bootstrap_sequence)
       bootstrap_sequence.map! do |pair_node|
-        if pair_node.key == 'include' && (seq_names = pair_node.value.value)
-          seq = bootstrap_sequences.value.select {|s| seq_names.include?(s.name)}
+        if pair_node.key == 'include' && (seq_names = pair_node.value)
+          seq = bootstrap_sequences.select {|s| seq_names.include?(s.name)}
           unless seq.length == seq_names.length
             raise StandardError, "Named sequence does not exist: names = #{seq_names.join(', ')}."
           end
@@ -33,12 +33,12 @@ module Dsl
     def resolve_bootstrap_sequence_includes
       # pool and load balancer includes
       if pools
-        pools.value.each {|pool| resolve_includes(pool.bootstrap_sequence.value)}
-        resolve_includes(load_balancer.bootstrap_sequence.value)
+        pools.value.each {|pool| resolve_includes(pool.bootstrap_sequence)}
+        resolve_includes(load_balancer.bootstrap_sequence)
       end
       # box includes
       if boxes
-        boxes.value.each {|box| resolve_includes(box.bootstrap_sequence.value)}
+        boxes.value.each {|box| resolve_includes(box.bootstrap_sequence)}
       end
       self
     end
