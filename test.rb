@@ -1,2 +1,8 @@
+require 'bundler/setup'
+require 'rubygems'
 require 'dsl'
-Dsl.parse(File.read 'examples/formation').resolve_bootstrap_sequence_includes
+require 'pry'
+
+dsl = Dsl.parse(File.read 'examples/formation')
+binding.pry
+dsl.resolve_bootstrap_sequence_includes

@@ -83,11 +83,10 @@ module Grammar
 
     # pool definition blocks
     pool_def_block = ((m('http') | m('tcp'))[:pool_type] > m('-pool: ') > cut! > vm_spec[:vm_spec] > newline >
-     vm_flavor > newline > service_defs[:services] >
+     vm_flavor > newline > service_defs[:services] > newline >
      bootstrap_sequence) >> ->(s) {
-      [PoolDefinition.new(s[:vm_spec].first,
-       s[:flavor_name].first, (s[:ports] || []).first,
-       s[:services].first, s[:bootstrap_sequence].first)]
+      [(s[:pool_type].map(&:text).join =~ /tcp/ ? TCPPoolDefinition : HTTPPoolDefinition).new(s[:vm_spec].first,
+       s[:flavor_name].first, s[:services].first, s[:bootstrap_sequence].first)]
     }
     pool_def_block_list = Dsl::Grammar::listify(pool_def_block, newline.many, PoolDefinitionList)
 

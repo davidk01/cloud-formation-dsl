@@ -20,8 +20,12 @@ http-pool: 'miloapi', 4 instances with 'ubuntu 12.04'
   vm-flavor: 'tiny'
   service:
     port: 8080
-    healthcheck-endpoint: /ok
+    healthcheck-endpoint: '/ok'
     healthcheck-port: 8081
+  service:
+    port: 8082
+    healthcheck-endpoint: '/ok'
+    healthcheck-port: 8083
   bootstrap-sequence:
     include: 'pre', 'post'
     git: 'git://miloapi/api-bootstrap.git'
@@ -32,6 +36,10 @@ http-pool: 'miloapi', 4 instances with 'ubuntu 12.04'
 
 http-pool: 'availability-service', 2 instances with 'redhat 6.0'
   vm-flavor: 'xlarge'
+  service:
+    port: 8081
+    healthcheck-endpoint: '/ok'
+    healthcheck-port: 8081
   bootstrap-sequence:
     include: 'pre'
     git: 'git://availability-service/availability-service-bootstrap.git'
@@ -43,6 +51,10 @@ http-pool: 'availability-service', 2 instances with 'redhat 6.0'
 
 tcp-pool: 'redis', 2 instances with 'redhat 6.0'
   vm-flavor: 'xlarge'
+  service:
+    port: 6379
+    healthcheck-endpoint: '/ok'
+    healthcheck-port: 8081
   bootstrap-sequence:
     git: 'git://redis/redis.git'
     include: 'pre'
