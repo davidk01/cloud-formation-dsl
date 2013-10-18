@@ -43,20 +43,20 @@ module Grammar
 
     # pair, pair list definitions
     generic_pair = (ws.many.any > key[:key] > m(': ') > cut! > quoted_value_list[:value]) >> ->(s) {
-      [PairNode.new(s[:key].first, s[:value].first)]
+      [PairNode.new(s[:key].first, s[:value].first.value)]
     }
     generic_pair_list = Dsl::Grammar::listify(generic_pair, newline, PairList)
 
     # vm spec requires certain common things
     vm_spec = (quoted_value[:pool_name] > m(', ') > cut! > integer[:count] >
      (m(' instance ') | m(' instances ')) > cut! > m('with ') > cut! > quoted_value[:image_name]) >> ->(s) {
-      [VMSpec.new(s[:pool_name].first, s[:count].first, s[:image_name].first)]
+      [VMSpec.new(s[:pool_name].first, s[:count].first.value, s[:image_name].first)]
     }
 
     #named bootstrap sequences
     named_bootstrap_sequence = (m('bootstrap-sequence: ') > cut! > quoted_value[:sequence_name] >
      newline > generic_pair_list[:sequence]) >> ->(s) {
-      [NamedBootstrapSequence.new(s[:sequence_name].first, s[:sequence].first)]
+      [NamedBootstrapSequence.new(s[:sequence_name].first, s[:sequence].first.value)]
     }
     named_bootstrap_sequence_list = Dsl::Grammar::listify(named_bootstrap_sequence,
      newline.many, NamedBootstrapSequenceList)
@@ -70,14 +70,14 @@ module Grammar
     load_balancer_block = (m('load-balancer: ') > cut! > vm_spec[:vm_spec] > newline >
      vm_flavor > newline > bootstrap_sequence) >> ->(s) {
       [LoadBalancerDefinitionBlock.new(s[:vm_spec].first, s[:flavor_name].first,
-       s[:bootstrap_sequence].first)]
+       s[:bootstrap_sequence].first.value)]
     }
 
     # service definitions
-    service_def = (ws.many.any > m('service:') > cut! > newline > ws.many.any > m('port: ') > cut! > integer[:port] > newline >
-     ws.many.any > m('healthcheck-endpoint: ') > cut! > quoted_value[:endpoint] > newline >
+    service_def = (ws.many.any > m('service:') > cut! > newline > ws.many.any > m('port: ') > cut! > integer[:port] > cut! >
+     newline > ws.many.any > m('healthcheck-endpoint: ') > cut! > quoted_value[:endpoint] > newline >
      ws.many.any > m('healthcheck-port: ') > cut! > integer[:endpoint_port]) >> ->(s) {
-      [ServicePortDefinition.new(s[:port].first, s[:endpoint].first, s[:endpoint_port].first)]
+      [ServicePortDefinition.new(s[:port].first.value, s[:endpoint].first, s[:endpoint_port].first.value)]
     }
     service_defs = Dsl::Grammar::listify(service_def, newline, ServiceDefinitionList)
 
@@ -86,7 +86,7 @@ module Grammar
      vm_flavor > cut! > newline > service_defs[:services] > cut! > newline >
      bootstrap_sequence) >> ->(s) {
       [(s[:pool_type].map(&:text).join =~ /tcp/ ? TCPPoolDefinition : HTTPPoolDefinition).new(s[:vm_spec].first,
-       s[:flavor_name].first, s[:services].first, s[:bootstrap_sequence].first)]
+       s[:flavor_name].first, s[:services].first.value, s[:bootstrap_sequence].first.value)]
     }
     pool_def_block_list = Dsl::Grammar::listify(pool_def_block, newline.many, PoolDefinitionList)
 
@@ -119,7 +119,7 @@ module Grammar
       if s[:load_balancer].empty? && s[:box_definitions].empty?
         raise StandardError, "Either pool definitions or box definitions must be non-empty."
       end
-      [RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
+      [RawCloudFormation.new(s[:defaults].first.value, s[:named_bootstrap_sequences].first.value,
        s[:load_balancer].first, s[:pool_definitions].first, s[:box_definitions].first)]
     }
 
