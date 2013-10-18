@@ -94,7 +94,7 @@ module Grammar
     box_def_block = (m('box: ') > cut! > vm_spec[:vm_spec] > newline >
      vm_flavor > newline > bootstrap_sequence) >> ->(s) {
       [BoxDefinition.new(s[:vm_spec].first, s[:flavor_name].first,
-       s[:bootstrap_sequence].first)]
+       s[:bootstrap_sequence].first.value)]
     }
     box_def_block_list = Dsl::Grammar::listify(box_def_block, newline.many, BoxDefinitionList)
 
