@@ -73,14 +73,21 @@ module Grammar
        s[:bootstrap_sequence].first)]
     }
 
+    # service definitions
+    service_def = (ws.many.any > m('service:') > cut! > newline > ws.many.any > m('port: ') > cut! > integer[:port] > newline >
+     ws.many.any > m('healthcheck-endpoint: ') > cut! > quoted_value[:endpoint] > newline >
+     ws.many.any > m('healthcheck-port: ') > cut! > integer[:endpoint_port]) >> ->(s) {
+      [ServicePortDefinition.new(s[:port].first, s[:endpoint].first, s[:endpoint_port].first)]
+    }
+    service_defs = Dsl::Grammar::listify(service_def, newline, ServiceDefinitionList)
+
     # pool definition blocks
-    pool_def_block = (m('pool: ') > cut! > vm_spec[:vm_spec] > newline >
-     vm_flavor > newline > 
-     (ws.many.any > m('service-ports: ') > cut! > integer_list[:ports] > newline).any >
+    pool_def_block = ((m('http') | m('tcp'))[:pool_type] > m('-pool: ') > cut! > vm_spec[:vm_spec] > newline >
+     vm_flavor > newline > service_defs[:services] >
      bootstrap_sequence) >> ->(s) {
       [PoolDefinition.new(s[:vm_spec].first,
        s[:flavor_name].first, (s[:ports] || []).first,
-       s[:bootstrap_sequence].first)]
+       s[:services].first, s[:bootstrap_sequence].first)]
     }
     pool_def_block_list = Dsl::Grammar::listify(pool_def_block, newline.many, PoolDefinitionList)
 

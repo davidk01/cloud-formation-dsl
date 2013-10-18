@@ -16,9 +16,12 @@ load-balancer: 'lb', 1 instance with 'ubuntu 12.04'
     include: 'pre', 'post'
     include: 'post'
 
-pool: 'miloapi', 4 instances with 'ubuntu 12.04'
+http-pool: 'miloapi', 4 instances with 'ubuntu 12.04'
   vm-flavor: 'tiny'
-  service-ports: 6379, 8080, 1234, 80
+  service:
+    port: 8080
+    healthcheck-endpoint: /ok
+    healthcheck-port: 8081
   bootstrap-sequence:
     include: 'pre', 'post'
     git: 'git://miloapi/api-bootstrap.git'
@@ -27,7 +30,7 @@ pool: 'miloapi', 4 instances with 'ubuntu 12.04'
     directory: '/bootstrap/miloapi-tests'
     include: 'post'
 
-pool: 'availability-service', 2 instances with 'redhat 6.0'
+http-pool: 'availability-service', 2 instances with 'redhat 6.0'
   vm-flavor: 'xlarge'
   bootstrap-sequence:
     include: 'pre'
@@ -38,13 +41,19 @@ pool: 'availability-service', 2 instances with 'redhat 6.0'
     directory: '/bootstrap/availability-service-tests'
     include: 'post'
 
-box: 'lonely-box', 1 instance with 'centos 5'
+tcp-pool: 'redis', 2 instances with 'redhat 6.0'
+  vm-flavor: 'xlarge'
+  bootstrap-sequence:
+    git: 'git://redis/redis.git'
+    include: 'pre'
+
+box: 'lonely-box', 2 instance with 'centos 5'
   vm-flavor: 'medium'
   bootstrap-sequence:
     include: 'pre'
     git: 'git://lonely-box/bootstrap.git'
 
-box: 'another-lonely-box', 1 instance with 'debian 6'
+box: 'another-lonely-box', 2 instance with 'debian 6'
   vm-flavor: 'large'
   bootstrap-sequence:
     file: '/bootstrap/box-bootstrap.sh'
