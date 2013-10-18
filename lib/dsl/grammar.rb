@@ -82,8 +82,8 @@ module Grammar
     service_defs = Dsl::Grammar::listify(service_def, newline, ServiceDefinitionList)
 
     # pool definition blocks
-    pool_def_block = ((m('http') | m('tcp'))[:pool_type] > m('-pool: ') > cut! > vm_spec[:vm_spec] > newline >
-     vm_flavor > newline > service_defs[:services] > newline >
+    pool_def_block = ((m('http') | m('tcp'))[:pool_type] > m('-pool: ') > cut! > vm_spec[:vm_spec] > cut! > newline >
+     vm_flavor > cut! > newline > service_defs[:services] > cut! > newline >
      bootstrap_sequence) >> ->(s) {
       [(s[:pool_type].map(&:text).join =~ /tcp/ ? TCPPoolDefinition : HTTPPoolDefinition).new(s[:vm_spec].first,
        s[:flavor_name].first, s[:services].first, s[:bootstrap_sequence].first)]
@@ -103,6 +103,7 @@ module Grammar
       [Defaults.new(s[:defaults])]
     }
 
+    end_of_file = (ws | newline).many.any > !wildcard
     # so a cloud formation spec is just a default section, followed by named bootstrap
     # sequences, followed by some pool definitions and then followed by some box definitions
     # theoretically the entire thing can be empty
@@ -110,7 +111,7 @@ module Grammar
      (named_bootstrap_sequence_list > newline.many.ignore).any[:named_bootstrap_sequences] > # (bootstrap sequences)?
      (load_balancer_block[:load_balancer] > newline.many >
       pool_def_block_list[:pool_definitions] > newline.many).any > # (lb pools)?
-     box_def_block_list.any[:box_definitions]) >> ->(s) {
+     box_def_block_list.any[:box_definitions] > end_of_file) >> ->(s) {
       [:defaults, :named_bootstrap_sequence, :pool_definitions,
        :load_balancer, :box_definitions].each do |sym|
         s[sym] ||= []
@@ -118,8 +119,8 @@ module Grammar
       if s[:load_balancer].empty? && s[:box_definitions].empty?
         raise StandardError, "Either pool definitions or box definitions must be non-empty."
       end
-      RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
-       s[:load_balancer].first, s[:pool_definitions].first, s[:box_definitions].first)
+      [RawCloudFormation.new(s[:defaults].first, s[:named_bootstrap_sequences].first,
+       s[:load_balancer].first, s[:pool_definitions].first, s[:box_definitions].first)]
     }
 
   end

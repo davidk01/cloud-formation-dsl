@@ -45,6 +45,13 @@ module Dsl
 
   end
 
-  def self.parse(str); Grammar.parse(str); end
+  def self.parse(str)
+    res = Grammar.parse(str)
+    if res[0] == :fail
+      raise StandardError, res
+    else
+      res[0]
+    end
+  end
 
 end
